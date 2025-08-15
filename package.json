@@ -1,0 +1,15 @@
+{
+  "name": "render-firebase-cleanup",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "cleanup": "node server.js --once"  // tiện dùng cho Cron Job
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "firebase-admin": "^12.6.0",
+    "luxon": "^3.5.0"
+  }
+}
