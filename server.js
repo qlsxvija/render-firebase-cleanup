@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000;
 // - Với SetDevicesNV2/SetDevicesNV3: không skip gì (có thể thêm sau)
 const CLEANUP_ROOTS = [
   { path: 'BESAUNTCT', skip: ['SetRuContent'] },
+  { path: 'SetDevicesNV', skip: ['SetRuContent'] },
   { path: 'SetDevicesNV2', skip: ['SetRuContent'] },
   { path: 'SetDevicesVNGDH', skip: ['SetRuContent'] }
 ];
@@ -109,4 +110,5 @@ app.get(cleanupPath, async (_req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => console.log(`Listening on :${PORT} - GET ${cleanupPath}`));
+
 
