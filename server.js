@@ -1,4 +1,4 @@
-// server.js (đoạn chính liên quan)
+// server.js
 import express from 'express';
 import { DateTime } from 'luxon';
 import { db } from './firebase.js';
@@ -6,9 +6,7 @@ import { db } from './firebase.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Khai báo các root cần dọn
-// - Với BESAUNTCT: skip 'SetRuContent'
-// - Với SetDevicesNV2/SetDevicesNV3: không skip gì (có thể thêm sau)
+// ===== DANH SÁCH ROOT CẦN DỌN =====
 const CLEANUP_ROOTS = [
   { path: 'BESAUNTCT', skip: ['SetRuContent'] },
   { path: 'SetDevicesNV', skip: ['SetRuContent'] },
@@ -16,14 +14,16 @@ const CLEANUP_ROOTS = [
   { path: 'SetDevicesVNGDH', skip: ['SetRuContent'] }
 ];
 
-// Hàm parse updateTime + rule > 3 giờ (dùng lại cho mọi root)
+// ===== HÀM KIỂM TRA THỜI GIAN updateTime =====
 function shouldDeleteNode(value, now) {
-  // value có thể là object hoặc string JSON
   let v = value;
   if (typeof v === 'string') {
     try { v = JSON.parse(v); } catch { return { deletable: false, reason: 'invalid_json' }; }
   }
-  const ut = v?.updateTime;
+
+  // Với các root thường thì updateTime nằm trực tiếp,
+  // còn riêng VNGDH1 thì updateTime nằm trong Devices
+  const ut = v?.Devices?.updateTime || v?.updateTime;
   if (!ut) return { deletable: false, reason: 'no_updateTime' };
 
   const updated = DateTime.fromISO(String(ut), { zone: 'Asia/Ho_Chi_Minh' });
@@ -33,13 +33,11 @@ function shouldDeleteNode(value, now) {
   return { deletable: diffH > 3, hours: diffH };
 }
 
-// Dọn nhiều root trong MỘT lần bằng multi-path update
+// ===== HÀM DỌN CÁC ROOT TRONG DANH SÁCH =====
 async function cleanupMultipleRoots() {
   const now = DateTime.now().setZone('Asia/Ho_Chi_Minh');
-
-  // Sẽ gom các đường dẫn cần xóa vào đây: { "root/key": null, ... }
   const updates = {};
-  const report = []; // báo cáo theo từng root
+  const report = [];
 
   for (const root of CLEANUP_ROOTS) {
     const ref = db.ref(root.path);
@@ -55,7 +53,7 @@ async function cleanupMultipleRoots() {
     snap.forEach(child => {
       const key = child.key;
 
-      // skip theo tên key (ví dụ SetRuContent)
+      // bỏ qua các key trong danh sách skip (nếu có)
       if (root.skip?.some(s => s.toLowerCase() === String(key).toLowerCase())) {
         skipped++;
         return;
@@ -63,7 +61,6 @@ async function cleanupMultipleRoots() {
 
       const { deletable } = shouldDeleteNode(child.val(), now);
       if (deletable) {
-        // Multi-path update: xóa bằng cách set null
         updates[`${root.path}/${key}`] = null;
         deleted++;
       } else {
@@ -74,28 +71,73 @@ async function cleanupMultipleRoots() {
     report.push({ root: root.path, deleted, kept, skipped });
   }
 
-  // Thực hiện xóa hàng loạt nếu có gì để xóa
-  if (Object.keys(updates).length > 0) {
-    await db.ref().update(updates); // 1 request cho tất cả
-  }
+  // Nếu có node cần xóa, thực hiện multi-path update 1 lần
+  if (Object.keys(updates).length > 0)
+    await db.ref().update(updates);
 
-  // Tính tổng
+  // ✅ DỌN THÊM ROOT VNGDH1
+  const vngdh1 = await cleanupVNGDH1();
+  report.push(vngdh1);
+
+  // Tổng kết toàn bộ
   const total = report.reduce((acc, r) => {
-    acc.deleted += r.deleted;
-    acc.kept += r.kept;
-    acc.skipped += r.skipped;
+    acc.deleted += r.deleted || 0;
+    acc.kept += r.kept || 0;
+    acc.skipped += r.skipped || 0;
     return acc;
   }, { deleted: 0, kept: 0, skipped: 0 });
 
   return { report, total };
 }
 
-// Health & Home
+// ===== HÀM DỌN RIÊNG NODE VNGDH1 =====
+async function cleanupVNGDH1() {
+  const now = DateTime.now().setZone('Asia/Ho_Chi_Minh');
+  const ref = db.ref('VNGDH1');
+  const snap = await ref.get();
+
+  if (!snap.exists()) return { root: 'VNGDH1', deleted: 0, kept: 0, note: 'empty' };
+
+  const updates = {};
+  let deleted = 0, kept = 0;
+
+  snap.forEach(child => {
+    const value = child.val();
+    const ut = value?.Devices?.updateTime;
+
+    if (!ut) {
+      kept++;
+      return;
+    }
+
+    const updated = DateTime.fromISO(String(ut), { zone: 'Asia/Ho_Chi_Minh' });
+    if (!updated.isValid) {
+      kept++;
+      return;
+    }
+
+    const diffH = now.diff(updated, 'hours').hours;
+    if (diffH > 3) {
+      updates[`VNGDH1/${child.key}`] = null;
+      deleted++;
+    } else {
+      kept++;
+    }
+  });
+
+  if (Object.keys(updates).length > 0)
+    await db.ref().update(updates);
+
+  return { root: 'VNGDH1', deleted, kept };
+}
+
+// ===== ENDPOINTS =====
+
+// Kiểm tra service
 app.get('/healthz', (_req, res) => res.status(200).json({ ok: true, dbReady: true, error: null }));
 app.get('/', (_req, res) => res.send('Service is up'));
 
-// Endpoint cleanup không cần POST/token (dành cho Cron GET)
-// Bạn có thể đổi path bí mật bằng env CRON_PATH nếu muốn (vd: abc123 → /cron/abc123)
+// Endpoint cleanup (cho cron job)
 const CRON_PATH = process.env.CRON_PATH || '';
 const cleanupPath = CRON_PATH ? `/cron/${CRON_PATH}` : '/cleanup';
 
@@ -109,6 +151,7 @@ app.get(cleanupPath, async (_req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log(`Listening on :${PORT} - GET ${cleanupPath}`));
-
-
+// ===== KHỞI ĐỘNG SERVER =====
+app.listen(PORT, '0.0.0.0', () =>
+  console.log(`Listening on :${PORT} - GET ${cleanupPath}`)
+);
