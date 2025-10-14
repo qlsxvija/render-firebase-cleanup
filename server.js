@@ -99,9 +99,17 @@ async function cleanupVNGDH1() {
   if (!snap.exists()) return { root: 'VNGDH1', deleted: 0, kept: 0, note: 'empty' };
 
   const updates = {};
-  let deleted = 0, kept = 0;
+  let deleted = 0, kept = 0, skipped = 0;
 
   snap.forEach(child => {
+    const key = child.key;
+
+    // 👇 Bỏ qua node "SetRuContents"
+    if (String(key).toLowerCase() === 'setrucontents') {
+      skipped++;
+      return;
+    }
+
     const value = child.val();
     const ut = value?.Devices?.updateTime;
 
@@ -118,7 +126,7 @@ async function cleanupVNGDH1() {
 
     const diffH = now.diff(updated, 'hours').hours;
     if (diffH > 3) {
-      updates[`VNGDH1/${child.key}`] = null;
+      updates[`VNGDH1/${key}`] = null;
       deleted++;
     } else {
       kept++;
@@ -128,7 +136,7 @@ async function cleanupVNGDH1() {
   if (Object.keys(updates).length > 0)
     await db.ref().update(updates);
 
-  return { root: 'VNGDH1', deleted, kept };
+  return { root: 'VNGDH1', deleted, kept, skipped };
 }
 
 // ===== ENDPOINTS =====
