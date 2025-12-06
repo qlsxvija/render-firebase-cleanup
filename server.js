@@ -11,7 +11,8 @@ const CLEANUP_ROOTS = [
   { path: 'BESAUNTCT', skip: ['SetRuContent'] },
   { path: 'SetDevicesNV', skip: ['SetRuContent'] },
   { path: 'SetDevicesNV2', skip: ['SetRuContent'] },
-  { path: 'SetDevicesVNGDH', skip: ['SetRuContent'] }
+  { path: 'SetDevicesVNGDH', skip: ['SetRuContent'] },
+  { path: 'QUOCHUYG2', skip: ['SetRuContent'] }
 ];
 
 // ===== HÀM KIỂM TRA THỜI GIAN =====
