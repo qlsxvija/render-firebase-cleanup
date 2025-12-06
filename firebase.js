@@ -2,26 +2,30 @@
 import admin from 'firebase-admin';
 import fs from 'node:fs';
 
-const databaseURL = process.env.FIREBASE_DB_URL;
-if (!databaseURL) throw new Error('Missing FIREBASE_DB_URL');
+function initFirebase(name, credFile, dbURL) {
+  if (!dbURL) throw new Error(`Missing DB URL for ${name}`);
+  if (!fs.existsSync(credFile)) throw new Error(`Missing credential file: ${credFile}`);
 
-const credFilePath =
-  process.env.FIREBASE_CRED_FILE ||
-  process.env.GOOGLE_APPLICATION_CREDENTIALS ||
-  '/etc/secrets/firebase-key.json';
-
-let credential;
-if (fs.existsSync(credFilePath)) {
-  credential = admin.credential.cert(credFilePath);
-} else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-  const obj = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-  credential = admin.credential.cert(obj);
-} else {
-  throw new Error('No Firebase credentials found (FIREBASE_CRED_FILE/GOOGLE_APPLICATION_CREDENTIALS/FIREBASE_SERVICE_ACCOUNT_JSON)');
+  return admin.initializeApp({
+    credential: admin.credential.cert(credFile),
+    databaseURL: dbURL
+  }, name);
 }
 
-if (!admin.apps.length) {
-  admin.initializeApp({ credential, databaseURL });
-}
+// Firebase 1
+const app1 = initFirebase(
+  'firebase1',
+  process.env.FIREBASE1_CRED_FILE || '/etc/secrets/firebase1.json',
+  process.env.FIREBASE1_DB_URL
+);
 
-export const db = admin.database();
+// Firebase 2
+const app2 = initFirebase(
+  'firebase2',
+  process.env.FIREBASE2_CRED_FILE || '/etc/secrets/firebase2.json',
+  process.env.FIREBASE2_DB_URL
+);
+
+// Xuất DB riêng
+export const db1 = app1.database();
+export const db2 = app2.database();
