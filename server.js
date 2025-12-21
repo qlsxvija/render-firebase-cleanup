@@ -31,7 +31,7 @@ function shouldDeleteNode(value, now) {
   if (!updated.isValid) return { deletable: false, reason: 'invalid_time' };
 
   const diffH = now.diff(updated, 'hours').hours;
-  return { deletable: diffH > 3, hours: diffH };
+  return { deletable: diffH > 1, hours: diffH };
 }
 
 // ===== DỌN CÁC ROOT =====
