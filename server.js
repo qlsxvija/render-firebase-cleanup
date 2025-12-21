@@ -1,7 +1,7 @@
 // server.js
 import express from 'express';
 import { DateTime } from 'luxon';
-import { db1, db2 } from './firebase.js';
+import { db1, db2, db3 } from './firebase.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -138,7 +138,7 @@ async function cleanupVNGDH1(db) {
 
 // Health check
 app.get('/healthz', (_req, res) => 
-  res.status(200).json({ ok: true, db1: true, db2: true })
+  res.status(200).json({ ok: true, db1: true, db2: true, db3: true })
 );
 
 // Home
@@ -150,12 +150,13 @@ const cleanupPath = CRON_PATH ? `/cron/${CRON_PATH}` : '/cleanup';
 
 app.get(cleanupPath, async (_req, res) => {
   try {
-    const [firebase1, firebase2] = await Promise.all([
+    const [firebase1, firebase2, firebase3] = await Promise.all([
       cleanupMultipleRoots(db1, 'firebase1'),
-      cleanupMultipleRoots(db2, 'firebase2')
+      cleanupMultipleRoots(db2, 'firebase2'),
+      cleanupMultipleRoots(db3, 'firebase3')
     ]);
 
-    res.json({ ok: true, via: 'GET', path: cleanupPath, firebase1, firebase2 });
+    res.json({ ok: true, via: 'GET', path: cleanupPath, firebase1, firebase2, firebase3 });
   } catch (e) {
     console.error(e);
     res.status(500).json({ ok: false, error: String(e) });
