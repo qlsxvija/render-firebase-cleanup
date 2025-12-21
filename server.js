@@ -13,6 +13,7 @@ const CLEANUP_ROOTS = [
   { path: 'SetDevicesNV2', skip: ['SetRuContent'] },
   { path: 'SetDevicesVNGDH', skip: ['SetRuContent'] },
   { path: 'QUOCHUYG2', skip: ['SetRuContent'] },
+  { path: 'QuocHuyBINZ', skip: ['SetRuContent'] },
   { path: 'DevicesBinz', skip: ['SetRuContent'] }
 ];
 
