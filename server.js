@@ -1,7 +1,7 @@
 // server.js
 import express from 'express';
 import { DateTime } from 'luxon';
-import { db1, db2, db3 } from './firebase.js';
+import { db1, db2, db3, db4 } from './firebase.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,7 +18,8 @@ const CLEANUP_ROOTS = [
   { path: 'QUOCHUYG5', skip: ['SetRuContent'] },
   { path: 'QuocHuyBINZ', skip: ['SetRuContent'] },
   { path: 'QuocHuyKEN', skip: ['SetRuContent'] },
-  { path: 'DevicesBinz', skip: ['SetRuContent'] }
+  { path: 'DevicesBinz', skip: ['SetRuContent'] },
+  { path: 'HoangShowing', skip: ['SetRuContent'] }
 ];
 
 // ===== HÀM KIỂM TRA THỜI GIAN =====
@@ -143,7 +144,7 @@ async function cleanupVNGDH1(db) {
 
 // Health check
 app.get('/healthz', (_req, res) => 
-  res.status(200).json({ ok: true, db1: true, db2: true, db3: true })
+  res.status(200).json({ ok: true, db1: true, db2: true, db3: true, db4: true })
 );
 
 // Home
@@ -158,10 +159,11 @@ app.get(cleanupPath, async (_req, res) => {
     const [firebase1, firebase2, firebase3] = await Promise.all([
       cleanupMultipleRoots(db1, 'firebase1'),
       cleanupMultipleRoots(db2, 'firebase2'),
-      cleanupMultipleRoots(db3, 'firebase3')
+      cleanupMultipleRoots(db3, 'firebase3'),
+      cleanupMultipleRoots(db4, 'firebase4')
     ]);
 
-    res.json({ ok: true, via: 'GET', path: cleanupPath, firebase1, firebase2, firebase3 });
+    res.json({ ok: true, via: 'GET', path: cleanupPath, firebase1, firebase2, firebase3 , firebase4});
   } catch (e) {
     console.error(e);
     res.status(500).json({ ok: false, error: String(e) });
