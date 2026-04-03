@@ -156,7 +156,7 @@ const cleanupPath = CRON_PATH ? `/cron/${CRON_PATH}` : '/cleanup';
 
 app.get(cleanupPath, async (_req, res) => {
   try {
-    const [firebase1, firebase2, firebase3] = await Promise.all([
+    const [firebase1, firebase2, firebase3, firebase4] = await Promise.all([
       cleanupMultipleRoots(db1, 'firebase1'),
       cleanupMultipleRoots(db2, 'firebase2'),
       cleanupMultipleRoots(db3, 'firebase3'),
