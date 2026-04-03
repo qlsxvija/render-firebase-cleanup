@@ -31,9 +31,16 @@ const app3 = initFirebase(
   process.env.FIREBASE3_CRED_FILE || '/etc/secrets/firebase3.json',
   process.env.FIREBASE3_DB_URL
 );
+// Firebase 4
+const app4 = initFirebase(
+  'firebase4',
+  process.env.FIREBASE4_CRED_FILE || '/etc/secrets/firebase4.json',
+  process.env.FIREBASE4_DB_URL
+);
 
 // Xuất DB riêng
 export const db1 = app1.database();
 export const db2 = app2.database();
 export const db3 = app3.database();
+export const db4 = app4.database();
 
