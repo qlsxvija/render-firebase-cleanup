@@ -19,7 +19,8 @@ const CLEANUP_ROOTS = [
   { path: 'QuocHuyBINZ', skip: ['SetRuContent'] },
   { path: 'QuocHuyKEN', skip: ['SetRuContent'] },
   { path: 'DevicesBinz', skip: ['SetRuContent'] },
-  { path: 'HoangShowing', skip: ['SetRuContent'] }
+  { path: 'HoangShowing', skip: ['SetRuContent'] },
+  { path: 'HEOQUOCHUY', skip: ['SetRuContent'] }
 ];
 
 // ===== HÀM KIỂM TRA THỜI GIAN =====
